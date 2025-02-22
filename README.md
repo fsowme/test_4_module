@@ -150,7 +150,7 @@
   ```shell
   compose start kafka-1
   ```
-- Проверим состояние
+- Проверим состояние - [скрин](screenshots/7_status.png)
   ```shell
   compose exec -it kafka-0 kafka-topics.sh \
     --bootstrap-server localhost:9092 \
