@@ -9,7 +9,7 @@
 
 - Создание топика 8 партиций и фактор репликации 3 - [скрин](screenshots/1_topic_created.png)
   ```shell
-  compose exec -it kafka-0 kafka-topics.sh \
+  compose exec -it kafka-0 kafka-topics \
     --bootstrap-server localhost:9092 \
     --topic test-topic \
     --create \
@@ -19,7 +19,7 @@
   
 - Вывести информацию о распределении партиций по брокерам - [скрин](screenshots/2_status.png)
   ```shell
-   compose exec -it kafka-0 kafka-topics.sh \
+   compose exec -it kafka-0 kafka-topics \
     --bootstrap-server localhost:9092 \
     --describe \
     --topic test-topic

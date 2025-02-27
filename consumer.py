@@ -2,7 +2,7 @@ from confluent_kafka import Consumer
 
 if __name__ == "__main__":
     consumer_conf = {
-        "bootstrap.servers": "localhost:9080",
+        "bootstrap.servers": "localhost:9093",
         "group.id": "consumer-ssl-group",
         "auto.offset.reset": "earliest",
 
@@ -15,10 +15,10 @@ if __name__ == "__main__":
 
         "sasl.mechanism": "PLAIN",
         "sasl.username": "admin",  # Имя пользователя для аутентификации
-        "sasl.password": "admin-secret",  # Пароль пользователя для аутентификации
+        "sasl.password": "password",  # Пароль пользователя для аутентификации
     }
     consumer = Consumer(consumer_conf)
-    consumer.subscribe(["sasl-plain-topic"])
+    consumer.subscribe(["sasl-plain-topic2"])
 
     try:
         while True:

@@ -5,7 +5,7 @@ import time
 
 if __name__ == "__main__":
     producer_conf = {
-        "bootstrap.servers": "localhost:9080",
+        "bootstrap.servers": "localhost:9093",
 
         # Настройки безопасности SSL
         "security.protocol": "SASL_PLAINTEXT",
@@ -16,7 +16,7 @@ if __name__ == "__main__":
         # Настройки SASL-аутентификации
         "sasl.mechanism": "PLAIN",  # Используемый механизм SASL (PLAIN)
         "sasl.username": "admin",  # Имя пользователя для аутентификации
-        "sasl.password": "admin-secret",  # Пароль пользователя для аутентификации
+        "sasl.password": "password",  # Пароль пользователя для аутентификации
     }
 
     producer = Producer(producer_conf)
@@ -24,7 +24,7 @@ if __name__ == "__main__":
         key = f"key-{uuid.uuid4()}"
         value = "SASL/PLAIN"
         producer.produce(
-            "sasl-plain-topic",
+            "sasl-plain-topic2",
             key=key,
             value=value,
         )
