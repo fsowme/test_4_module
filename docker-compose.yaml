@@ -18,9 +18,6 @@ services:
    expose:
      - 9092
      - 9093
-#   ports:
-#     - 9092:9092
-#     - 9093:9093
    depends_on:
      - zookeeper
    environment:
@@ -55,9 +52,6 @@ services:
    expose:
      - 9094
      - 9095
-#   ports:
-#     - 9094:9094
-#     - 9095:9095
    depends_on:
      - zookeeper
    environment:
@@ -92,9 +86,6 @@ services:
    expose:
      - 9096
      - 9097
-#   ports:
-#     - 9096:9096
-#     - 9097:9097
    depends_on:
      - zookeeper
    environment:
