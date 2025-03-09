@@ -174,3 +174,88 @@
         Topic: test-topic       Partition: 7    Leader: 2       Replicas: 1,2   Isr: 2,1
   </pre>
   </details>
+
+
+## Задание 2
+- Создание топиков
+  ```shell
+  compose exec -it kafka-0 kafka-topics.sh \
+    --bootstrap-server kafka-0:9091 \
+    --create \
+    --topic topic-1 \
+    --partitions 3 \
+    --replication-factor 2 \
+    --command-config /home/admin.properties
+  ```
+  ```shell
+  compose exec -it kafka-0 kafka-topics.sh \
+    --bootstrap-server kafka-0:9091 \
+    --create --topic topic-2 \
+    --partitions 3 \
+    --replication-factor 2 \
+    --command-config /home/admin.properties
+  ```
+
+
+- Выдача прав
+  ```shell
+  compose exec -it kafka-0 kafka-acls.sh \
+    --bootstrap-server kafka-0:9091 \
+    --add \
+    --allow-principal User:consumer \
+    --operation Read \
+    --topic topic-1 \
+    --group consumer-ssl-group \
+    --command-config /home/admin.properties
+  ```
+  ```shell
+  compose exec -it kafka-0 kafka-acls.sh \
+    --bootstrap-server kafka-0:9091 \
+    --add \
+    --allow-principal User:producer \
+    --operation Write \
+    --topic topic-1 \
+    --command-config /home/admin.properties
+  ```
+  ```shell
+  compose exec -it kafka-0 kafka-acls.sh \
+    --bootstrap-server kafka-0:9091 \
+    --add \
+    --allow-principal User:producer \
+    --operation Write \
+    --topic topic-2 \
+    --command-config /home/admin.properties
+  ```
+
+
+- Проверка
+  - Продюсер
+    ```shell
+    python producer.py
+    ```
+    <details>
+    <summary>Вывод в консоль</summary>
+  
+    ***будет писать в топики по очереди***
+    <pre>
+    Отправлено сообщение: topic='topic-1' key='key-531c2def-c5b3-4e42-b971-46eb79627484', value='SSL'
+    Отправлено сообщение: topic='topic-2' key='key-d0c7923d-2877-4ddd-b005-b7f58aed3fa3', value='SSL'
+    </pre>
+    </details>
+  
+  - Консьюмер
+    ```shell
+    python consumer.py
+    ```
+    
+    <details>
+    <summary>Вывод в консоль</summary>
+  
+    ***попытается подписаться на обе топика, но сможет только на topic-1***
+    <pre>
+    Ошибка: KafkaError{code=TOPIC_AUTHORIZATION_FAILED,val=29,str="Subscribed topic not available: topic-2: Broker: Topic authorization failed"}
+    Получено сообщение: key='key-cdf247f9-4cab-41ab-a0de-366aaf6c9a63', value='SSL', offset=6
+    Получено сообщение: key='key-7093824e-74c5-4881-bd43-a6bb63f44264', value='SSL', offset=7
+
+    </pre>
+    </details>
