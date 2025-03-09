@@ -1,151 +1,219 @@
+version: "3.5"
 
 services:
- zookeeper:
-   ports:
-     - 22181:2181
-   container_name: zookeeper
-   networks:
-     - confluent
-   image: confluentinc/cp-zookeeper:7.4.4
-   environment:
-     ZOOKEEPER_CLIENT_PORT: 2181
-
- kafka-1:
-   image: confluentinc/cp-kafka:7.4.4
-   container_name: kafka-1
-   networks:
-     - confluent
-   expose:
-     - 9092
-     - 9093
-   depends_on:
-     - zookeeper
-   environment:
-     KAFKA_BROKER_ID: 1
-     KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-     KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,SSL://0.0.0.0:9093
-     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,SSL:SSL
-     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,SSL://kafka-1:9093
-     KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-     KAFKA_SSL_KEYSTORE_FILENAME: kafka-server-1.jks
-     KAFKA_SSL_KEYSTORE_PASSWORD: password
-     KAFKA_SSL_TRUSTSTORE_FILENAME: truststore.jks
-     KAFKA_SSL_TRUSTSTORE_CREDENTIALS: credentials
-     KAFKA_SSL_KEYSTORE_CREDENTIALS: credentials
-     KAFKA_SSL_KEY_PASSWORD: password
-     KAFKA_SSL_CLIENT_AUTH: required
-     KAFKA_SSL_KEY_CREDENTIALS: credentials
-   volumes:
-        - ./kafka-certs:/etc/kafka/secrets
-   healthcheck:
-     test: kafka-topics --list --bootstrap-server localhost:9092 || exit 1
-     interval: 1s
-     timeout: 60s
-     retries: 60
-
- kafka-2:
-   image: confluentinc/cp-kafka:7.4.4
-   container_name: kafka-2
-   networks:
-     - confluent
-   expose:
-     - 9094
-     - 9095
-   depends_on:
-     - zookeeper
-   environment:
-     KAFKA_BROKER_ID: 2
-     KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-     KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9094,SSL://0.0.0.0:9095
-     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,SSL:SSL
-     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9094,SSL://kafka-2:9095
-     KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-     KAFKA_SSL_KEYSTORE_FILENAME: kafka-server-2.jks
-     KAFKA_SSL_KEYSTORE_PASSWORD: password
-     KAFKA_SSL_TRUSTSTORE_FILENAME: truststore.jks
-     KAFKA_SSL_TRUSTSTORE_CREDENTIALS: credentials
-     KAFKA_SSL_KEYSTORE_CREDENTIALS: credentials
-     KAFKA_SSL_KEY_PASSWORD: password
-     KAFKA_SSL_CLIENT_AUTH: required
-     KAFKA_SSL_KEY_CREDENTIALS: credentials
-   volumes:
-     - ./kafka-certs:/etc/kafka/secrets
-   healthcheck:
-     test: kafka-topics --list --bootstrap-server localhost:9094 || exit 1
-     interval: 1s
-     timeout: 60s
-     retries: 60
-
- kafka-3:
-   image: confluentinc/cp-kafka:7.4.4
-   container_name: kafka-3
-   networks:
-     - confluent
-   expose:
-     - 9096
-     - 9097
-   depends_on:
-     - zookeeper
-   environment:
-     KAFKA_BROKER_ID: 3
-     KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-     KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9096,SSL://0.0.0.0:9097
-     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,SSL:SSL
-     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9096,SSL://kafka-3:9097
-     KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-     KAFKA_SSL_KEYSTORE_FILENAME: kafka-server-3.jks
-     KAFKA_SSL_KEYSTORE_PASSWORD: password
-     KAFKA_SSL_TRUSTSTORE_FILENAME: truststore.jks
-     KAFKA_SSL_TRUSTSTORE_CREDENTIALS: credentials
-     KAFKA_SSL_KEYSTORE_CREDENTIALS: credentials
-     KAFKA_SSL_KEY_PASSWORD: password
-     KAFKA_SSL_CLIENT_AUTH: required
-     KAFKA_SSL_KEY_CREDENTIALS: credentials
-   volumes:
-     - ./kafka-certs:/etc/kafka/secrets
-   healthcheck:
-     test: kafka-topics --list --bootstrap-server localhost:9096 || exit 1
-     interval: 1s
-     timeout: 60s
-     retries: 60
-
- producer:
-    build:
-      context: ./
-      dockerfile: Dockerfile
-    depends_on:
-      kafka-1:
-        condition: service_healthy
-      kafka-2:
-        condition: service_healthy
-      kafka-3:
-        condition: service_healthy
-    volumes:
-      - ./kafka-certs/:/data/app/certs
+  kafka-0:
+    container_name: kafka-0
+    hostname: kafka-0
+    image: docker.io/bitnami/kafka:3.7
+    ports:
+      - "29092:29092"
+      - "29095:9404"
+    restart: always
     networks:
-      - confluent
-    entrypoint: ["python", "/data/app/producer.py"]
+      - kafka
+    environment:
+      # KAFKA CLUSTER
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      - KAFKA_CFG_SUPER_USERS=User:sa
+      # LISTENERS
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9091,EXTERNAL://:29092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://:9091,EXTERNAL://192.168.0.188:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:SASL_SSL,EXTERNAL:SASL_SSL,CONTROLLER:SASL_SSL
+      # BROKER SETTINGS
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_INTER_BROKER_USER=sa
+      - KAFKA_INTER_BROKER_PASSWORD=000000
+      - KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL=PLAIN
+      # CONTROLLER SETTINGS
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_SASL_MECHANISM_CONTROLLER_PROTOCOL=PLAIN
+      - KAFKA_CONTROLLER_USER=sa
+      - KAFKA_CONTROLLER_PASSWORD=000000
+      # CLIENT SETTINGS
+      - KAFKA_CLIENT_LISTENER_NAME=EXTERNAL
+      - KAFKA_CLIENT_USERS=sa,da,va
+      - KAFKA_CLIENT_PASSWORDS=000000,111111,222222
+      # ACL
+      - KAFKA_CFG_AUTHORIZER_CLASS_NAME=org.apache.kafka.metadata.authorizer.StandardAuthorizer
+      - KAFKA_CFG_ALLOW_EVERYONE_IF_NO_ACL_FOUND=false
+      # SSL
+      - KAFKA_CFG_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM=
+      - KAFKA_CERTIFICATE_PASSWORD=supersecret
+      - KAFKA_TLS_TYPE=JKS
+      # SASL
+      - KAFKA_CFG_SASL_ENABLED_MECHANISMS=PLAIN
+      # COMMON SETTINGS
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+    volumes:
+      - kafka_0_data:/bitnami/kafka
+      - ./keystore/kafka-0.server.keystore.jks:/opt/bitnami/kafka/config/certs/kafka.keystore.jks:ro
+      - ./truststore/kafka.truststore.jks:/opt/bitnami/kafka/config/certs/kafka.truststore.jks:ro
+      - ./properties/:/home/
+    healthcheck:
+      test: "bash -c 'printf \"\" > /dev/tcp/127.0.0.1/9091; exit $$?;'"
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
- consumer:
-   build:
-     context: ./
-     dockerfile: Dockerfile
-   depends_on:
-     kafka-1:
-       condition: service_healthy
-     kafka-2:
-       condition: service_healthy
-     kafka-3:
-       condition: service_healthy
-   volumes:
-     - ./kafka-certs/:/data/app/certs
-   networks:
-     - confluent
-   entrypoint: ["python", "/data/app/consumer.py"]
+  kafka-1:
+    container_name: kafka-1
+    hostname: kafka-1
+    image: docker.io/bitnami/kafka:3.7
+    ports:
+      - "29093:29093"
+      - "29096:9404"
+    restart: always
+    networks:
+      - kafka
+    environment:
+      # KAFKA CLUSTER
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      - KAFKA_CFG_SUPER_USERS=User:sa
+      # LISTENERS
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9091,EXTERNAL://:29093,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://:9091,EXTERNAL://192.168.0.188:29093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:SASL_SSL,EXTERNAL:SASL_SSL,CONTROLLER:SASL_SSL
+      # BROKER SETTINGS
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_INTER_BROKER_USER=sa
+      - KAFKA_INTER_BROKER_PASSWORD=000000
+      - KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL=PLAIN
+      # CONTROLLER SETTINGS
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_SASL_MECHANISM_CONTROLLER_PROTOCOL=PLAIN
+      - KAFKA_CONTROLLER_USER=sa
+      - KAFKA_CONTROLLER_PASSWORD=000000
+      # CLIENT SETTINGS
+      - KAFKA_CLIENT_LISTENER_NAME=EXTERNAL
+      - KAFKA_CLIENT_USERS=sa,da,va
+      - KAFKA_CLIENT_PASSWORDS=000000,111111,222222
+      # ACL
+      - KAFKA_CFG_AUTHORIZER_CLASS_NAME=org.apache.kafka.metadata.authorizer.StandardAuthorizer
+      - KAFKA_CFG_ALLOW_EVERYONE_IF_NO_ACL_FOUND=false
+      # SSL
+      - KAFKA_CFG_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM=
+      - KAFKA_CERTIFICATE_PASSWORD=supersecret
+      - KAFKA_TLS_TYPE=JKS
+      # SASL
+      - KAFKA_CFG_SASL_ENABLED_MECHANISMS=PLAIN
+      # COMMON SETTINGS
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+    volumes:
+      - kafka_1_data:/bitnami/kafka
+      - ./keystore/kafka-1.server.keystore.jks:/opt/bitnami/kafka/config/certs/kafka.keystore.jks:ro
+      - ./truststore/kafka.truststore.jks:/opt/bitnami/kafka/config/certs/kafka.truststore.jks:ro
+    healthcheck:
+      test: "bash -c 'printf \"\" > /dev/tcp/127.0.0.1/9091; exit $$?;'"
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  kafka-2:
+    container_name: kafka-2
+    hostname: kafka-2
+    image: docker.io/bitnami/kafka:3.7
+    ports:
+      - "29094:29094"
+      - "29097:9404"
+    restart: always
+    networks:
+      - kafka
+    environment:
+      # KAFKA CLUSTER
+      - KAFKA_CFG_NODE_ID=2
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      - KAFKA_CFG_SUPER_USERS=User:sa
+      # LISTENERS
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9091,EXTERNAL://:29094,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://:9091,EXTERNAL://192.168.0.188:29094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:SASL_SSL,EXTERNAL:SASL_SSL,CONTROLLER:SASL_SSL
+      # BROKER SETTINGS
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_INTER_BROKER_USER=sa
+      - KAFKA_INTER_BROKER_PASSWORD=000000
+      - KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL=PLAIN
+      # CONTROLLER SETTINGS
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_SASL_MECHANISM_CONTROLLER_PROTOCOL=PLAIN
+      - KAFKA_CONTROLLER_USER=sa
+      - KAFKA_CONTROLLER_PASSWORD=000000
+      # CLIENT SETTINGS
+      - KAFKA_CLIENT_LISTENER_NAME=EXTERNAL
+      - KAFKA_CLIENT_USERS=sa,da,va
+      - KAFKA_CLIENT_PASSWORDS=000000,111111,222222
+      # ACL
+      - KAFKA_CFG_AUTHORIZER_CLASS_NAME=org.apache.kafka.metadata.authorizer.StandardAuthorizer
+      - KAFKA_CFG_ALLOW_EVERYONE_IF_NO_ACL_FOUND=false
+      # SSL
+      - KAFKA_CFG_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM=
+      - KAFKA_CERTIFICATE_PASSWORD=supersecret
+      - KAFKA_TLS_TYPE=JKS
+      # SASL
+      - KAFKA_CFG_SASL_ENABLED_MECHANISMS=PLAIN
+      # COMMON SETTINGS
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+    volumes:
+      - kafka_2_data:/bitnami/kafka
+      - ./keystore/kafka-2.server.keystore.jks:/opt/bitnami/kafka/config/certs/kafka.keystore.jks:ro
+      - ./truststore/kafka.truststore.jks:/opt/bitnami/kafka/config/certs/kafka.truststore.jks:ro
+    healthcheck:
+      test: "bash -c 'printf \"\" > /dev/tcp/127.0.0.1/9091; exit $$?;'"
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:v0.7.2
+    ports:
+      - 8080:8080
+    restart: always
+    networks:
+      - kafka
+    environment:
+      # CLUSTER SETTINGS
+      - KAFKA_CLUSTERS_0_NAME=dev-cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka-0:9091,kafka-1:9091,kafka-2:9091
+      - KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL=SASL_SSL
+      - KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM=PLAIN
+      - KAFKA_CLUSTERS_0_PROPERTIES_PROTOCOL=SASL
+      - KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG=org.apache.kafka.common.security.plain.PlainLoginModule required username="sa" password="000000";
+      - DYNAMIC_CONFIG_ENABLED=true
+      # AUTH
+      - AUTH_TYPE=LOGIN_FORM
+      - SPRING_SECURITY_USER_NAME=admin
+      - SPRING_SECURITY_USER_PASSWORD=admin
+      # TLS
+      - KAFKA_CLUSTERS_0_SSL_TRUSTSTORELOCATION=/kafka.truststore.jks
+      - KAFKA_CLUSTERS_0_SSL_TRUSTSTOREPASSWORD=supersecret
+    volumes:
+      - ./truststore/kafka.truststore.jks:/kafka.truststore.jks:ro
+    depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider localhost:8080 || exit 1
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  kafka_0_data:
+  kafka_1_data:
+  kafka_2_data:
 
 networks:
- confluent:
-   driver: bridge
+  kafka:

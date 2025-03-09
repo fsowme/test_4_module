@@ -14,8 +14,8 @@ if __name__ == "__main__":
         # Настройки безопасности SSL
         "security.protocol": "SSL",
         "ssl.ca.location": "certs/ca.crt",  # Сертификат центра сертификации
-        "ssl.certificate.location": "certs/kafka-client.crt",  # Сертификат клиента Kafka
-        "ssl.key.location": "certs/kafka-client.key",  # Приватный ключ для клиента Kafka
+        "ssl.certificate.location": "certs/kafka-1.crt",  # Сертификат клиента Kafka
+        "ssl.key.location": "certs/kafka-1.key",  # Приватный ключ для клиента Kafka
 
         # Настройки SASL-аутентификации
         # "sasl.mechanism": "PLAIN",  # Используемый механизм SASL (PLAIN)
